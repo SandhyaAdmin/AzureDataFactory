@@ -10,7 +10,7 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobStorageLocation",
-				"fileName": "data.txt",
+				"fileName": "abc.txt",
 				"folderPath": "output",
 				"container": "adfdemo"
 			}
