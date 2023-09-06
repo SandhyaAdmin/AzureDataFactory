@@ -7,6 +7,9 @@
 		},
 		"storageaccountprojsan_LS_connectionString": {
 			"value": ""
+		},
+		"SqlDBSanProj_LS_connectionString": {
+			"value": ""
 		}
 	}
 }

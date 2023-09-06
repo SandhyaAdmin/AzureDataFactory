@@ -10,6 +10,10 @@
 		"storageaccountprojsan_LS_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'storageaccountprojsan_LS'"
+		},
+		"SqlDBSanProj_LS_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'SqlDBSanProj_LS'"
 		}
 	},
 	"variables": {
@@ -169,6 +173,50 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/pipelines/CopyStorageTextFilesPipeline')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SqlDBSanProj_LS')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('SqlDBSanProj_LS_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TestTableDataSet')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "SqlDBSanProj_LS",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "name",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "test"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/SqlDBSanProj_LS')]"
 			]
 		}
 	]
