@@ -1,0 +1,24 @@
+{
+	"name": "CopyActivityTrigger",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "CopyStorageTextFilesPipeline",
+					"type": "PipelineReference"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Day",
+				"interval": 1,
+				"startTime": "2023-09-06T14:00:00",
+				"timeZone": "Central Standard Time"
+			}
+		}
+	}
+}
