@@ -7,13 +7,18 @@
 			"metadata": "Data Factory name",
 			"defaultValue": "ADFDemoProj-1"
 		},
+		"SqlDBSanProj_LS_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'SqlDBSanProj_LS'",
+			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=testserversan.database.windows.net;Initial Catalog=SqlDBProjSan;User ID=sandhyaadmin"
+		},
 		"storageaccountprojsan_LS_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'storageaccountprojsan_LS'"
 		},
-		"SqlDBSanProj_LS_connectionString": {
-			"type": "secureString",
-			"metadata": "Secure string for 'connectionString' of 'SqlDBSanProj_LS'"
+		"DemoProjectAzureKV_LS_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://DemoProjKeyVault.vault.azure.net/"
 		},
 		"containerUri": {
 			"type": "string",
@@ -47,6 +52,9 @@
 					},
 					"SqlDBSanProj_LS_connectionString": {
 						"value": "[parameters('SqlDBSanProj_LS_connectionString')]"
+					},
+					"DemoProjectAzureKV_LS_properties_typeProperties_baseUrl": {
+						"value": "[parameters('DemoProjectAzureKV_LS_properties_typeProperties_baseUrl')]"
 					}
 				}
 			},

@@ -7,13 +7,18 @@
 			"metadata": "Data Factory name",
 			"defaultValue": "ADFDemoProj-1"
 		},
+		"SqlDBSanProj_LS_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'SqlDBSanProj_LS'",
+			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=testserversan.database.windows.net;Initial Catalog=SqlDBProjSan;User ID=sandhyaadmin"
+		},
 		"storageaccountprojsan_LS_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'storageaccountprojsan_LS'"
 		},
-		"SqlDBSanProj_LS_connectionString": {
-			"type": "secureString",
-			"metadata": "Secure string for 'connectionString' of 'SqlDBSanProj_LS'"
+		"DemoProjectAzureKV_LS_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://DemoProjKeyVault.vault.azure.net/"
 		}
 	},
 	"variables": {
@@ -27,7 +32,7 @@
 			"properties": {
 				"activities": [
 					{
-						"name": "StorageCopyActivity",
+						"name": "Blob-Blob Copy Activity",
 						"type": "Copy",
 						"dependsOn": [],
 						"policy": {
@@ -40,33 +45,136 @@
 						"userProperties": [],
 						"typeProperties": {
 							"source": {
-								"type": "BinarySource",
+								"type": "DelimitedTextSource",
 								"storeSettings": {
 									"type": "AzureBlobStorageReadSettings",
-									"recursive": true
+									"recursive": true,
+									"enablePartitionDiscovery": false
 								},
 								"formatSettings": {
-									"type": "BinaryReadSettings"
+									"type": "DelimitedTextReadSettings"
 								}
 							},
 							"sink": {
-								"type": "BinarySink",
+								"type": "DelimitedTextSink",
 								"storeSettings": {
 									"type": "AzureBlobStorageWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
 								}
 							},
-							"enableStaging": false
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
 						},
 						"inputs": [
 							{
-								"referenceName": "InputdataDataSet",
+								"referenceName": "BlobInputDataSet",
 								"type": "DatasetReference",
 								"parameters": {}
 							}
 						],
 						"outputs": [
 							{
-								"referenceName": "outputdataDataSet",
+								"referenceName": "BlobOutputDataSet",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "Blob-Table Copy Activity",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Blob-Blob Copy Activity",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false,
+								"tableOption": "autoCreate",
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "1",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "id",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "san",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "name",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "BlobOutputDataSet",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "TestTableDataSet",
 								"type": "DatasetReference",
 								"parameters": {}
 							}
@@ -80,12 +188,13 @@
 				"annotations": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/InputdataDataSet')]",
-				"[concat(variables('factoryId'), '/datasets/outputdataDataSet')]"
+				"[concat(variables('factoryId'), '/datasets/BlobInputDataSet')]",
+				"[concat(variables('factoryId'), '/datasets/BlobOutputDataSet')]",
+				"[concat(variables('factoryId'), '/datasets/TestTableDataSet')]"
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/InputdataDataSet')]",
+			"name": "[concat(parameters('factoryName'), '/BlobInputDataSet')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
 			"properties": {
@@ -94,22 +203,36 @@
 					"type": "LinkedServiceReference"
 				},
 				"annotations": [],
-				"type": "Binary",
+				"type": "DelimitedText",
 				"typeProperties": {
 					"location": {
 						"type": "AzureBlobStorageLocation",
 						"fileName": "data.txt",
 						"folderPath": "input",
 						"container": "adfdemo"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "1",
+						"type": "String"
+					},
+					{
+						"name": "san",
+						"type": "String"
 					}
-				}
+				]
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/storageaccountprojsan_LS')]"
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/outputdataDataSet')]",
+			"name": "[concat(parameters('factoryName'), '/BlobOutputDataSet')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
 			"properties": {
@@ -118,18 +241,90 @@
 					"type": "LinkedServiceReference"
 				},
 				"annotations": [],
-				"type": "Binary",
+				"type": "DelimitedText",
 				"typeProperties": {
 					"location": {
 						"type": "AzureBlobStorageLocation",
-						"fileName": "xyz.txt",
+						"fileName": "Algo.txt",
 						"folderPath": "output",
 						"container": "adfdemo"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/storageaccountprojsan_LS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TestTableDataSet')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "SqlDBSanProj_LS",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "name",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "test"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/SqlDBSanProj_LS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DemoProjectAzureKV_LS')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('DemoProjectAzureKV_LS_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SqlDBSanProj_LS')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('SqlDBSanProj_LS_connectionString')]",
+					"password": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "DemoProjectAzureKV_LS",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "ADFSqlPW"
 					}
 				}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/storageaccountprojsan_LS')]"
+				"[concat(variables('factoryId'), '/linkedServices/DemoProjectAzureKV_LS')]"
 			]
 		},
 		{
@@ -173,50 +368,6 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/pipelines/CopyStorageTextFilesPipeline')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/SqlDBSanProj_LS')]",
-			"type": "Microsoft.DataFactory/factories/linkedServices",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"annotations": [],
-				"type": "AzureSqlDatabase",
-				"typeProperties": {
-					"connectionString": "[parameters('SqlDBSanProj_LS_connectionString')]"
-				}
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/TestTableDataSet')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "SqlDBSanProj_LS",
-					"type": "LinkedServiceReference"
-				},
-				"annotations": [],
-				"type": "AzureSqlTable",
-				"schema": [
-					{
-						"name": "id",
-						"type": "int",
-						"precision": 10
-					},
-					{
-						"name": "name",
-						"type": "varchar"
-					}
-				],
-				"typeProperties": {
-					"schema": "dbo",
-					"table": "test"
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/SqlDBSanProj_LS')]"
 			]
 		}
 	]

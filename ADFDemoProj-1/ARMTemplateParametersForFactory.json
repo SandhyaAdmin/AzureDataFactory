@@ -5,11 +5,14 @@
 		"factoryName": {
 			"value": "ADFDemoProj-1"
 		},
+		"SqlDBSanProj_LS_connectionString": {
+			"value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=testserversan.database.windows.net;Initial Catalog=SqlDBProjSan;User ID=sandhyaadmin"
+		},
 		"storageaccountprojsan_LS_connectionString": {
 			"value": ""
 		},
-		"SqlDBSanProj_LS_connectionString": {
-			"value": ""
+		"DemoProjectAzureKV_LS_properties_typeProperties_baseUrl": {
+			"value": "https://DemoProjKeyVault.vault.azure.net/"
 		}
 	}
 }
